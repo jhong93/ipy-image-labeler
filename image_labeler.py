@@ -6,14 +6,15 @@ from typing import NamedTuple
 import abc
 
 
-class CellFactory(object):
+class InputCellFactory(object):
 
     @abc.abstractmethod
     def new(self, result_callback, value=None):
         raise NotImplementedError()
 
 
-class MultiClassCellFactory(CellFactory):
+class MultiClassInputCellFactory(InputCellFactory):
+    """For labeling a fixed number of classes"""
 
     def __init__(self, classes, default=None):
         self._classes = classes
@@ -33,7 +34,8 @@ class MultiClassCellFactory(CellFactory):
         return select_widget
 
 
-class DetectorValidationCellFactory(CellFactory):
+class DetectorValidationInputCellFactory(InputCellFactory):
+    """For validating detectors"""
 
     class ValResult(NamedTuple):
         tp: int
@@ -64,7 +66,7 @@ class DetectorValidationCellFactory(CellFactory):
         )
 
         def on_submit(unused):
-            result_callback(DetectorValidationCellFactory.ValResult(
+            result_callback(DetectorValidationInputCellFactory.ValResult(
                 tp=tp_widget.value,
                 fp=fp_widget.value,
                 fn=fn_widget.value
@@ -76,6 +78,11 @@ class DetectorValidationCellFactory(CellFactory):
 class ImageLabeler(object):
 
     def __init__(self, images, cell_factory, default_labels=None):
+        """
+        images: a list of numpy arrays
+        cell_factory: see above
+        default_labels: initial labels (by default, each label is None)
+        """
         self._images = images
         self._cell_factory = cell_factory
 
