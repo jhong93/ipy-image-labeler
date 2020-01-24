@@ -77,7 +77,8 @@ class DetectorValidationInputCellFactory(InputCellFactory):
 
 class ImageLabeler(object):
 
-    def __init__(self, images, cell_factory, default_labels=None):
+    def __init__(self, images, cell_factory, default_labels=None,
+                 multi_mode=False):
         """
         images: a list of numpy arrays
         cell_factory: see above
@@ -94,11 +95,20 @@ class ImageLabeler(object):
 
         self._output = widgets.Output()
         self._img_output = widgets.Output()
-        self._render()
+        if multi_mode:
+            self._render_multi()
+        else:
+            self._render_single()
         display(self._output)
 
     def remove(self):
         self._output.clear_output()
+
+    def _load_image(self, idx):
+        img_fp = BytesIO()
+        img = Image.fromarray(self._images[idx])
+        img.save(img_fp, format='png')
+        return img_fp.getvalue()
 
     @property
     def all_seen(self):
@@ -108,7 +118,28 @@ class ImageLabeler(object):
     def labels(self):
         return self._labels
 
-    def _render(self):
+    def _render_multi(self):
+
+        def render_img(idx):
+            img_data = self._load_image(idx)
+
+            def cell_callback(label):
+                self._labels[idx] = label
+
+            img_output = widgets.Output()
+            with img_output:
+                img_widget = widgets.Image(value=img_data, format='png')
+                display(self._cell_factory.new(
+                    cell_callback, value=self._labels[idx]
+                ))
+                display(img_widget)
+                self._seen[idx] = True
+            display(img_output)
+
+        for i in range(len(self._images)):
+            render_img(i)
+
+    def _render_single(self):
         n = len(self._images)
         idx = 0
 
@@ -153,10 +184,7 @@ class ImageLabeler(object):
         img_output = widgets.Output()
 
         def render_img(idx):
-            img_fp = BytesIO()
-            img = Image.fromarray(self._images[idx])
-            img.save(img_fp, format='png')
-            img_data = img_fp.getvalue()
+            img_data = self._load_image(idx)
 
             def cell_callback(label):
                 self._labels[idx] = label
