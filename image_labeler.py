@@ -27,6 +27,7 @@ class MultiClassInputCellFactory(InputCellFactory):
             options=self._classes,
             value=value
         )
+        select_widget.style.button_width = 'auto'
 
         def on_change(change):
             result_callback(change['new'])
